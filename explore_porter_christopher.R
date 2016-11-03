@@ -31,12 +31,41 @@ theData <- createDF(500)
 
 explore <- function(df, swtch="off", thrshld=0.5, bnVct=NULL){
   
+  df      <- theData 
+  swtch   <- "off" 
+  thrshld <- 0.5 
+  bnVct   <- NULL
+  
   #################################
   #### Load dependent libraries ###
   #################################
   library(ggplot2)
   library(grid)
   library(gridExtra)
+  
+  ###################################################
+  #### Preliminary Error Handling for Parameters ####
+  ###################################################
+  
+  #Create a boolean vector to test the class of each parameter
+  classTestVect <- c(dfTest        = is.data.frame(df),
+                     swtchTest     = is.character(swtch), 
+                     thrshldTest   = is.double(thrshld), 
+                     bnVctTest     = (is.vector(bnVct) | is.null(bnVct)))
+  
+  #If any of the tests fail, find the location of the first test. If no tests fail, value is NA
+  classTest <- match(FALSE,classTestVect)
+  
+  #Create a message indicating the variable that is not of the right class, optionaly stop the program 
+  errorMessage <- function(message_start="Please check the class of", stop_on=TRUE){
+    message <- paste(message_start, labels(classTestVect)[classTest])
+    if (stop_on) stop(message)
+  }
+  
+  #If there are any failed tests, return the error and stop the program
+  if (is.na(classTest)==F) errorMessage()
+  
+  
   
   ########################
   ### Define Functions ###
@@ -56,7 +85,24 @@ explore <- function(df, swtch="off", thrshld=0.5, bnVct=NULL){
     or <- fact | bool  
     
     #create a frequency table for each boolean and logical vector 
-    return(lapply(df[,or],table))
+    returnValue <- lapply(df[,or],table)
+    
+    ########################
+    #### Error Checking ####
+    ########################
+    
+    #Check that each element in returnValue is a table 
+    classTestVect <- unlist(lapply(returnValue,is.table))    
+    
+    #If any of the tests fail, find the location of the first test. If no tests fail, value is NA
+    classTest <- match(FALSE,classTestVect)
+    
+    #Report any issues, but continue to run the program
+    if (is.na(classTest)==F) errorMessage(
+      message_start = "The frequency table for the following variable is is not of class table", 
+      stop_on = F)
+    
+    return(returnValue)
   }  
   
   
@@ -72,7 +118,24 @@ explore <- function(df, swtch="off", thrshld=0.5, bnVct=NULL){
     num <- num & !bool
     
     #create a summary table for each numeric vector 
-    return(lapply(df[,num],summary))
+    returnValue <- lapply(df[,num],summary)
+    
+    ########################
+    #### Error Checking ####
+    ########################
+    
+    #Check that each element in returnValue is a table 
+    classTestVect <- unlist(lapply(returnValue,is.table))    
+    
+    #If any of the tests fail, find the location of the first test. If no tests fail, value is NA
+    classTest <- match(FALSE,classTestVect)
+    
+    #Report any issues, but continue to run the program
+    if (is.na(classTest)==F) errorMessage(
+      message_start = "The frequency table for the following variable is is not of class table", 
+      stop_on = F)
+    
+    return(returnValue)
   }
   
   
@@ -88,10 +151,26 @@ explore <- function(df, swtch="off", thrshld=0.5, bnVct=NULL){
     
     # Create numeric dataframe and return 
     numericDf <- df[ ,num]
+    
+    ########################
+    #### Error Checking ####
+    ########################
+    
+    #Check that the return value is a dataframe 
+    classTestVect <- is.data.frame(numericDf)
+    
+    #If any of the tests fail, find the location of the first test. If no tests fail, value is NA
+    classTest <- match(FALSE,classTestVect)
+    
+    #Report any issues, and end the program
+    if (is.na(classTest)==F) errorMessage(
+      message_start = "Failed to create the following dataframe:", 
+      stop_on = T)    
+    
     return(numericDf)
-  }
+    }
   
-  # Subset the Dataframe to the Numeric variables only (exclude logical)
+  # Subset the Dataframe to the Categorical  variables only (include logical)
   createCatDf <- function(df){
     
     # Create boolean vector to find all factor variables 
@@ -105,6 +184,22 @@ explore <- function(df, swtch="off", thrshld=0.5, bnVct=NULL){
     
     # Create a dataframe from the vector
     catDf <- df[,or]
+    
+    ########################
+    #### Error Checking ####
+    ########################
+    
+    #Check that the return value is a dataframe 
+    classTestVect <- is.data.frame(catDf)
+    
+    #If any of the tests fail, find the location of the first test. If no tests fail, value is NA
+    classTest <- match(FALSE,classTestVect)
+    
+    #Report any issues, but continue to run the program
+    if (is.na(classTest)==F) errorMessage(
+      message_start = "Failed to create the following dataframe:", 
+      stop_on = T)
+    
     return(catDf)
   }
   
@@ -130,6 +225,23 @@ explore <- function(df, swtch="off", thrshld=0.5, bnVct=NULL){
     
     # R-Squared Calculation
     rSq <- 1 - (SSEres / SSEtot)
+    
+    ########################
+    #### Error Checking ####
+    ########################
+    
+    #Check that the return value is a dataframe 
+    classTestVect <- c(varClass = is.numeric(rSq),
+                       varRange = (rSq >= 0) & (rSq <= 1) #Since linear regression 
+    )
+    
+    #If any of the tests fail, find the location of the first test. If no tests fail, value is NA
+    classTest <- match(FALSE,classTestVect)
+    
+    #Report any issues, but continue to run the program
+    if (is.na(classTest)==F) errorMessage(
+      message_start = "The R-Squared Value had the following error:", 
+      stop_on = F)
     
     #return the R-Squared Value
     return(rSq)
@@ -181,6 +293,25 @@ explore <- function(df, swtch="off", thrshld=0.5, bnVct=NULL){
     #name the columns
     colnames(corrDf) <- c('CorrelatedColumns','Correlation')
     
+    ########################
+    #### Error Checking ####
+    ########################    
+  
+    maxCorr <- max(abs(corrDf[2]))
+    
+    #Check that the return value is a dataframe 
+    classTestVect <- c(varClass = is.data.frame(corrDf),
+                       varRange = (maxCorr > 1)
+    )
+    
+    #If any of the tests fail, find the location of the first test. If no tests fail, value is NA
+    classTest <- match(FALSE,classTestVect)
+    
+    #Report any issues, but continue to run the program
+    if (is.na(classTest)==F) errorMessage(
+      message_start = "The Correlation Matrix had the following error:", 
+      stop_on = F)
+    
     #return dataframe
     return(corrDf)  
   }
@@ -204,6 +335,21 @@ explore <- function(df, swtch="off", thrshld=0.5, bnVct=NULL){
       geom_histogram(aes(y=..density..), bins = b, colour= 'Blue', fill= 'Blue') +
       geom_vline(xintercept = meanX, color = 'Red')  
     
+    ########################
+    #### Error Checking ####
+    ########################    
+    
+    #Check that the return value is a plot 
+    classTestVect <- c(varClass = is.ggplot(densityPlot))
+    
+    #If any of the tests fail, find the location of the first test. If no tests fail, value is NA
+    classTest <- match(FALSE,classTestVect)
+    
+    #Report any issues, but continue to run the program
+    if (is.na(classTest)==F) errorMessage(
+      message_start = "The density plot has the wrong class:", 
+      stop_on = F)
+    
     return(densityPlot)
   }
   
@@ -224,6 +370,21 @@ explore <- function(df, swtch="off", thrshld=0.5, bnVct=NULL){
       geom_histogram(stat="bin", position="identity", bins = b, color = "Blue", fill = "Blue") +
       geom_vline(xintercept = meanX, color = 'Red') 
     
+    ########################
+    #### Error Checking ####
+    ########################    
+    
+    #Check that the return value is a plot 
+    classTestVect <- c(varClass = is.ggplot(freqPlot))
+    
+    #If any of the tests fail, find the location of the first test. If no tests fail, value is NA
+    classTest <- match(FALSE,classTestVect)
+    
+    #Report any issues, but continue to run the program
+    if (is.na(classTest)==F) errorMessage(
+      message_start = "The freq plot has the wrong class:", 
+      stop_on = F)
+    
     return(freqPlot)
   }  
   
@@ -241,9 +402,31 @@ explore <- function(df, swtch="off", thrshld=0.5, bnVct=NULL){
     barPlot <- ggplot(data=vectDf, aes(vectDf[,x])) + 
       geom_bar(stat="count", position="stack",  color = "Gray", fill = "Gray")
     
+    ########################
+    #### Error Checking ####
+    ########################    
+    
+    #Check that the return value is a plot 
+    classTestVect <- c(varClass = is.ggplot(barPlot))
+    
+    #If any of the tests fail, find the location of the first test. If no tests fail, value is NA
+    classTest <- match(FALSE,classTestVect)
+    
+    #Report any issues, but continue to run the program
+    if (is.na(classTest)==F) errorMessage(
+      message_start = "The bar plot has the wrong class:", 
+      stop_on = F)
+    
     return(barPlot)
   }
   
+
+  runByBin <- function(thePlot,binVar=NULL){
+    # binVar is the binsize value
+    # the plot is the type of plot function to run
+    # loop through the dataframe and plot for the given bin size.
+    lapply(numericDf, thePlot, b=binVar)
+  }
   
   ##############################
   ### The Main Run Procedure ###
@@ -254,6 +437,8 @@ explore <- function(df, swtch="off", thrshld=0.5, bnVct=NULL){
   # Run the frequency table function on the dataframe
   
   freq <- freqTable(df)
+  
+  
   
   #2. a.) Function Defined Above
   # Run the Summary function on the dataframe
@@ -375,6 +560,21 @@ explore <- function(df, swtch="off", thrshld=0.5, bnVct=NULL){
   
   resultList <- list(freq, sum, rSqr, corr)
   
+  
+  ########################
+  #### Error Checking ####
+  ########################    
+  
+  #Check that the return value is a plot 
+  classTestVect <- c(varClass = is.list(resultList))
+  
+  #If any of the tests fail, find the location of the first test. If no tests fail, value is NA
+  classTest <- match(FALSE,classTestVect)
+  
+  #Report any issues, but continue to run the program
+  if (is.na(classTest)==F) errorMessage(
+    message_start = "The list of data exploration items is of the wrong class:", 
+    stop_on = T)
   return(resultList)
 }
 
