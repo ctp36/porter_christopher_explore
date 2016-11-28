@@ -3,6 +3,11 @@
 # Christopher Porter
 # 10.27.2016
 
+#Comments: For assignment 7 you get perfect work and I can see your understanding of the functions and the thoughts to break
+# a large function into small functions. But for assignment 8 I found several problems. I tested your function with your own
+# test case but I didn't get the desired output. And after study of your code, I think the problem is with the "runByBin". If 
+# I have any misunderstanding of your code, please feel free to email me.
+
 # Define a function to create a data frame for testing purposes
 createDF <- function(nrows){
   # Define a function to create a data frame for testing purposes
